@@ -1,1 +1,10 @@
 SugarCRM WorkFlow Export
+
+To run this run this command in your SugarCRM install directory
+
+Currently it's setup to export leads module but you can edit the file and change the line that defines $module =''; and
+and set it to the module that you need to export.
+
+git clone git://github.com/jwhitcraft/SugarCRMWorkflowExporter.git workflow_exporter
+cd workflow_exporter
+php export_workflows.php
