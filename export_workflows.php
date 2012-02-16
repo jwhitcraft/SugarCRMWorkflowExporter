@@ -13,9 +13,7 @@ $module = "Leads";
 $deleted = false;
 
 $_workflow_tables = array(
-    'workflow_actions',
     'workflow_actionshells',
-    'workflow_alerts',
     'workflow_alertshells',
     'workflow_schedules',
     'workflow_triggershells',
@@ -69,6 +67,16 @@ while($workflow = $db->fetchByAssoc($workflows)) {
                 $et = $db->query($sql);
                 while($_et = $db->fetchByAssoc($et)) {
                     $strWorkflows .= convert_db_record_to_sql('email_templates', $_et) . PHP_EOL;
+                }
+            }
+
+            if(strpos($table,"shells") !== false && $table != "workflow_triggershells") {
+                // we have one
+                $_tab = str_replace("hells", "", $table);
+                $sql = "SELECT * FROM " . $_tab . " where parent_id = '" . $_ts['id'] . "';";
+                $et = $db->query($sql);
+                while($_et = $db->fetchByAssoc($et)) {
+                    $strWorkflows .= convert_db_record_to_sql($_tab, $_et) . PHP_EOL;
                 }
             }
         }
