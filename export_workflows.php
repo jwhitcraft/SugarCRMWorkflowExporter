@@ -12,6 +12,10 @@ $module = "Leads";
 // include deleted ones?
 $deleted = false;
 
+// do we wnat to try and delete each record first?
+// useful for when we are rec-creating everything
+$run_delete_first = false;
+
 $_workflow_tables = array(
     'workflow_actionshells',
     'workflow_alertshells',
@@ -28,13 +32,17 @@ $sql .= ";";
 $db = DBManagerFactory::getInstance();
 
 function convert_db_record_to_sql($table, $row) {
-    global $db;
-    $sql = 'INSERT INTO ' . $table . '(';
+    global $db, $run_delete_first;
+    $sql = "";
+    if($run_delete_first === true) {
+        $sql .= "DELETE FROM " . $table . " WHERE id = '" . $row['id'] . "';" . PHP_EOL;
+    }
+
+    // get the field name
     $keys = array_keys($row);
 
-    $val = ') VALUES (';
-
-    $sql .= implode(",", $keys);
+    // start the insert sql statement
+    $sql .= 'INSERT INTO ' . $table . '(' . implode(",", $keys) . ') VALUES (';
 
     $_vals = array();
 
@@ -42,7 +50,7 @@ function convert_db_record_to_sql($table, $row) {
         $_vals[] = $db->quote($row[$k]);
     }
 
-    $sql .= $val . '"' . implode('","', $_vals) . '");';
+    $sql .= '"' . implode('","', $_vals) . '");';
 
     return $sql;
 }
@@ -70,15 +78,24 @@ while($workflow = $db->fetchByAssoc($workflows)) {
                 }
             }
 
-            if(strpos($table,"shells") !== false && $table != "workflow_triggershells") {
+            if(strpos($table,"shells") !== false) {
                 // we have one
-                $_tab = str_replace("hells", "", $table);
+                if($table == "workflow_triggershells") {
+                    // we need the data from the expressions table based off this id
+                    $_tab = "expressions";
+                } else {
+                    // we need the data from the related table based off this id
+                    $_tab = str_replace("hells", "", $table);
+                }
+
                 $sql = "SELECT * FROM " . $_tab . " where parent_id = '" . $_ts['id'] . "';";
                 $et = $db->query($sql);
                 while($_et = $db->fetchByAssoc($et)) {
                     $strWorkflows .= convert_db_record_to_sql($_tab, $_et) . PHP_EOL;
                 }
             }
+
+
         }
     }
 
