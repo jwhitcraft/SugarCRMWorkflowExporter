@@ -1,20 +1,40 @@
 <?php
+
+
+$options = getopt(
+    '',
+    array('module:', 'deleted', 'delete-sql')
+);
+
+if (!isset($argv[1]) || !isset($options['module'])) {
+
+    echo 'usage: php ' . $_SERVER['SCRIPT_NAME'] . ' --module [MODULE_NAME]' . PHP_EOL . PHP_EOL;
+    echo 'options:  --deleted       Do you want to include deleted workflows?' . PHP_EOL;
+    echo '          --delete-sql    Do you want to include the DELETE sql statements?' . PHP_EOL;
+
+    exit(1);
+}
+
+$module = $options['module'];
+
+// include deleted ones?
+$deleted = isset($options['deleted']) ? true : false;
+
+// do we wnat to try and delete each record first?
+// useful for when we are rec-creating everything
+$run_delete_first = isset($options['delete-sql']) ? true : false;
+
+echo 'Running for module:           ' . $module . PHP_EOL;
+echo 'Including deleted workflows?: ' . ($deleted ? 'Yes' : 'No') . PHP_EOL;
+echo 'Including DELETE sql?:        ' . ($run_delete_first ? 'Yes' : 'No') . PHP_EOL;
+echo PHP_EOL . PHP_EOL;
+
 chdir('..');
 define('sugarEntry', true);
 require_once('include/entryPoint.php');
 global $current_user;
 $current_user = new User();
 $current_user->getSystemUser();
-
-// which module do we want to export
-$module = "Leads";
-
-// include deleted ones?
-$deleted = false;
-
-// do we wnat to try and delete each record first?
-// useful for when we are rec-creating everything
-$run_delete_first = false;
 
 $_workflow_tables = array(
     'workflow_actionshells',
@@ -44,13 +64,22 @@ function convert_db_record_to_sql($table, $row) {
     // start the insert sql statement
     $sql .= 'INSERT INTO ' . $table . '(' . implode(",", $keys) . ') VALUES (';
 
-    $_vals = array();
+    $counter = count($keys);
+    foreach ($keys as $k) {
+        $counter--;
 
-    foreach($keys as $k) {
-        $_vals[] = $db->quote($row[$k]);
+        if (is_null($row[$k])) {
+            $sql .= 'null';
+        } else {
+            $sql .= '"' . $db->quote($row[$k]) . '"';
+        }
+
+        if ($counter != 0) {
+            $sql .= ',';
+        }
     }
 
-    $sql .= '"' . implode('","', $_vals) . '");';
+    $sql .= ');';
 
     return $sql;
 }
