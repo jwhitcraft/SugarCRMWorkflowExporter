@@ -64,13 +64,22 @@ function convert_db_record_to_sql($table, $row) {
     // start the insert sql statement
     $sql .= 'INSERT INTO ' . $table . '(' . implode(",", $keys) . ') VALUES (';
 
-    $_vals = array();
+    $counter = count($keys);
+    foreach ($keys as $k) {
+        $counter--;
 
-    foreach($keys as $k) {
-        $_vals[] = $db->quote($row[$k]);
+        if (is_null($row[$k])) {
+            $sql .= 'null';
+        } else {
+            $sql .= '"' . $db->quote($row[$k]) . '"';
+        }
+
+        if ($counter != 0) {
+            $sql .= ',';
+        }
     }
 
-    $sql .= '"' . implode('","', $_vals) . '");';
+    $sql .= ');';
 
     return $sql;
 }
